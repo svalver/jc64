@@ -37,6 +37,10 @@ import java.io.IOException;
 import sw_emulator.software.Assembler;
 import sw_emulator.software.Assembler.Name;
 import sw_emulator.software.MemoryDasm;
+import java.util.*;
+import java.util.HashMap; 
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Manage the files of disassembler
@@ -657,6 +661,100 @@ public class FileManager {
     return true;
   }    
   
+ /// Read the MMSAVE file generated with the VICE 3.5 monitor &
+  /// annotate 'code' memory sites.  Everything is 'data' except 
+  /// those addresses marked with '--x' (execute) 
+  
+  public boolean readMMSaveFile (File file, Project project) { 
+      try { 
+          Scanner inputStream = new Scanner(file);
+          /* for (int i=0; i<project.memory.length; i++) {
+                // project.memory[i]=new MemoryDasm();
+                // project.memory[i].address;
+                // project.memory[i].isCode = false; 
+                // project.memory[i].isData = true; 
+            } */
+          HashMap<Integer, String> io_map = new HashMap<>();
+          HashMap<Integer, String> rom_map = new HashMap<>();
+          HashMap<Integer, String> ram_map = new HashMap<>();
+          
+          Integer nram = 0; 
+          inputStream.next(); // Ignore the first line
+          while ( inputStream.hasNext() ) {
+              String data = inputStream.next() ;  // reads a whole line
+              String[] values = data.split (",");
+              String addr_str = values[0].replaceAll("^\"|\"$", ""); 
+              int address =Integer.parseInt(addr_str,16);
+              String io_str = values[1].replaceAll("^\"|\"$", ""); 
+              String rom_str = values[2].replaceAll("^\"|\"$", "");
+              String ram_str = values[3].replaceAll("^\"|\"$", ""); 
+         //     if (!io_str.equals( "---") ) {
+           //       io_map.put (address, io_str);
+            //  } 
+             // if (!rom_str.equals("---")) {
+             //     rom_map.put (address, rom_str);
+             // }
+                if (!io_str.equals( "---")) {
+                    io_map.put (address, io_str);
+                    ram_map.put (address, io_str);
+                } 
+                if (!rom_str.equals("---")) {
+                    rom_map.put (address, rom_str); 
+                    ram_map.put (address, rom_str);
+                }
+                if (!ram_str.equals("---")) {
+                 // System.out.println (String.format("* %s = %s", ram_str, "---") ); 
+                    ram_map.put (address, ram_str);
+                    nram = nram + 1; 
+                }
+          }
+          inputStream.close(); 
+          for (int i=0; i<project.memory.length; i++) 
+          {
+               int address = project.memory[i].address;
+               String rwx  = "---";
+               //System.out.println (address); 
+               if (ram_map.containsKey (address)) 
+               {
+                    project.memory[i].isCode = false; 
+                    project.memory[i].isData = false;
+                    rwx = ram_map.get(address); 
+                    //project.memory[i].isCode = false;
+                    //project.memory[i].isData = false;
+                    if ('x' == rwx.charAt(2)) {
+                        project.memory[i].isCode = true;
+                    }
+                  //  else
+                  //  {
+                    if ('r' == rwx.charAt(0)) {
+                            project.memory[i].isData = true;
+                          //  project.memory[i].isCode = false;
+                    }
+                    if ('w' == rwx.charAt(1)) {
+                            project.memory[i].isData = true;
+                          //  project.memory[i].isCode = false;
+                    }
+                  //  }
+               }
+                else
+               {
+                    project.memory[i].isCode = false;
+                    project.memory[i].isData = true;
+               }
+               
+               // System.out.println (String.format("* 0x%04X (%d) = %s code=%b,data=%b", 
+               //           address, address, rwx,project.memory[i].isCode , project.memory[i].isData ) ); 
+            } 
+            System.out.println (String.format("memory length = %d", project.memory.length ) );  
+            System.out.println (String.format("#ram = %d",nram ) );
+            System.out.println (String.format("#i/o = %d",io_map.size() ));
+            System.out.println (String.format("#rom = %d",rom_map.size() ));
+        } 
+        catch (FileNotFoundException ex) {
+          Logger.getLogger(FileManager.class.getName()).log(Level.SEVERE, null, ex);
+      }
+    return true;
+  }
   /**
    * Read the project from file 
    * 
@@ -676,8 +774,10 @@ public class FileManager {
       project.file=in.readUTF();
       project.description=in.readUTF();
       project.fileType=FileType.valueOf(in.readUTF());
-      if (version>0) project.targetType=TargetType.valueOf(in.readUTF());  
-      else project.targetType=TargetType.C64;  
+      if (version>0) 
+      	project.targetType=TargetType.valueOf(in.readUTF());  
+      else 
+      	project.targetType=TargetType.C64;  
       
       int size=in.readInt();      
       project.inB=new byte[size];

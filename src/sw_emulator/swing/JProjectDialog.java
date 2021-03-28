@@ -121,10 +121,10 @@ public class JProjectDialog extends javax.swing.JDialog {
             break;        
         }          
       } else {
-          jRadioButtonC64.setSelected(true);       
+          jRadioButtonC64.setSelected(false);       
           jRadioButtonC1541.setSelected(false);
           jRadioButtonC128.setSelected(false);
-          jRadioButtonVic20.setSelected(false);
+          jRadioButtonVic20.setSelected(true);
           jRadioButtonPlus4.setSelected(false);
         }
     }

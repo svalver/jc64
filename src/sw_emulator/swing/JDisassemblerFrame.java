@@ -106,6 +106,9 @@ public class JDisassemblerFrame extends javax.swing.JFrame implements userAction
   /** Project chooser file dialog*/
   JFileChooser projectChooserFile=new JFileChooser();
   
+  /** Project chooser file dialog*/
+  JFileChooser mmSaveChooserFile=new JFileChooser();
+  
   /** Project merge file dialog*/
   JFileChooser projectMergeFile=new JFileChooser();  
   
@@ -141,15 +144,15 @@ public class JDisassemblerFrame extends javax.swing.JFrame implements userAction
   
   /** Compiler */
   Compiler compiler=new Compiler();
-  
-  
-    /**
-     * Creates new form JFrameDisassembler
-     */
+ 
+  /**
+    * Creates new form JFrameDisassembler
+    */
     public JDisassemblerFrame() {        
         initComponents();
         Shared.framesList.add(this);
         Shared.framesList.add(projectChooserFile);
+        Shared.framesList.add(mmSaveChooserFile); 
         Shared.framesList.add(projectMergeFile);
         Shared.framesList.add(exportAsChooserFile);
         Shared.framesList.add(optionMPRLoadChooserFile);
@@ -166,6 +169,8 @@ public class JDisassemblerFrame extends javax.swing.JFrame implements userAction
         
         jOptionDialog.useOption(option);
         
+        // SERGI: MMSAVE FILE LOADER
+        mmSaveChooserFile.addChoosableFileFilter(new FileNameExtensionFilter("CSV (*.csv)", "csv"));  
         projectChooserFile.addChoosableFileFilter(new FileNameExtensionFilter("JC64Dis (*.dis)", "dis"));
         projectMergeFile.addChoosableFileFilter(new FileNameExtensionFilter("JC64Dis (*.dis)", "dis"));
         exportAsChooserFile.addChoosableFileFilter(new FileNameExtensionFilter("Source (*.txt)","txt"));
@@ -304,7 +309,7 @@ public class JDisassemblerFrame extends javax.swing.JFrame implements userAction
         jMenuItemTextScreen = new javax.swing.JMenuItem();
         jMenuItemTextPetascii = new javax.swing.JMenuItem();
         jPanelToolBar = new javax.swing.JPanel();
-        jToolBarFile = new javax.swing.JToolBar();
+        jToolBarFile = new javax.swing.JToolBar();  
         jButtonNewProject = new javax.swing.JButton();
         jButtonOpenProject = new javax.swing.JButton();
         jButtonClose = new javax.swing.JButton();
@@ -430,6 +435,7 @@ public class JDisassemblerFrame extends javax.swing.JFrame implements userAction
         jMenuItemNewProject = new javax.swing.JMenuItem();
         jSeparatorProject1 = new javax.swing.JPopupMenu.Separator();
         jMenuItemOpenProject = new javax.swing.JMenuItem();
+        jMenuItemOpenProject1 = new javax.swing.JMenuItem();
         jMenuItemCloseProject = new javax.swing.JMenuItem();
         jSeparatorProject2 = new javax.swing.JPopupMenu.Separator();
         jMenuItemSaveProject = new javax.swing.JMenuItem();
@@ -1312,12 +1318,24 @@ public class JDisassemblerFrame extends javax.swing.JFrame implements userAction
     jMenuItemOpenProject.setMnemonic('o');
     jMenuItemOpenProject.setText("Open Project");
     jMenuItemOpenProject.setToolTipText("");
+    jMenuItemOpenProject.setActionCommand("Open MMSAVE");
     jMenuItemOpenProject.addActionListener(new java.awt.event.ActionListener() {
         public void actionPerformed(java.awt.event.ActionEvent evt) {
             jMenuItemOpenProjectActionPerformed(evt);
         }
     });
     jMenuMerge.add(jMenuItemOpenProject);
+    
+    jMenuItemOpenProject1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/sw_emulator/swing/icons/mini/fileopen.png"))); // NOI18N
+    jMenuItemOpenProject1.setMnemonic('o');
+    jMenuItemOpenProject1.setText("Open MMSAVE");
+    jMenuItemOpenProject1.setToolTipText("");
+    jMenuItemOpenProject1.addActionListener(new java.awt.event.ActionListener() {
+        public void actionPerformed(java.awt.event.ActionEvent evt) {
+            jMenuItemOpenProject1ActionPerformed(evt);
+        }
+    });
+    jMenuMerge.add(jMenuItemOpenProject1);
 
     jMenuItemCloseProject.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_C, java.awt.event.InputEvent.SHIFT_DOWN_MASK | java.awt.event.InputEvent.CTRL_DOWN_MASK));
     jMenuItemCloseProject.setIcon(new javax.swing.ImageIcon(getClass().getResource("/sw_emulator/swing/icons/mini/close.png"))); // NOI18N
@@ -2598,6 +2616,11 @@ public class JDisassemblerFrame extends javax.swing.JFrame implements userAction
       execute(MEM_HIGHLOW);
     }//GEN-LAST:event_jButtonMarkHighLowActionPerformed
 
+    private void jMenuItemOpenProject1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemOpenProject1ActionPerformed
+        // TODO add your handling code here:
+       execute (PROJ_OPEN_MMSAVE);
+    }//GEN-LAST:event_jMenuItemOpenProject1ActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -2717,6 +2740,7 @@ public class JDisassemblerFrame extends javax.swing.JFrame implements userAction
     private javax.swing.JMenuItem jMenuItemNumText;
     private javax.swing.JMenuItem jMenuItemNumText1;
     private javax.swing.JMenuItem jMenuItemOpenProject;
+    private javax.swing.JMenuItem jMenuItemOpenProject1;
     private javax.swing.JMenuItem jMenuItemPlus;
     private javax.swing.JMenuItem jMenuItemSIDLD;
     private javax.swing.JMenuItem jMenuItemSaveAsProject;
@@ -2801,6 +2825,9 @@ public class JDisassemblerFrame extends javax.swing.JFrame implements userAction
       case PROJ_OPEN:
         projectOpen();
         break;
+      case PROJ_OPEN_MMSAVE:
+        projectOpenMMSAVE();
+        break; 
       case PROJ_SAVE:
         projectSave(); 
         break;        
@@ -3051,6 +3078,31 @@ public class JDisassemblerFrame extends javax.swing.JFrame implements userAction
     dataTableModelMemory.fireTableDataChanged();
   }
   
+  // Sergi: load the MMSAVE file 
+  private void projectOpenMMSAVE()
+  {
+      if (project == null)
+      {
+        JOptionPane.showMessageDialog(this, "Empty project.", "Information", JOptionPane.WARNING_MESSAGE);
+      }
+      else
+      {
+            // there must be a project
+            int retVal=mmSaveChooserFile.showOpenDialog(this);
+            if (retVal == JFileChooser.APPROVE_OPTION) {
+                File mmsaveFile = mmSaveChooserFile.getSelectedFile();
+                if (!FileManager.instance.readMMSaveFile(mmsaveFile, project)) {
+                    JOptionPane.showMessageDialog(this, "Error reading MMSAVE file", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+                else 
+                {
+                     JOptionPane.showMessageDialog(this, "File MMSAVE read", "Information", JOptionPane.INFORMATION_MESSAGE);
+                     // DISASSEMBLY AGAIN ???
+                     execute(SOURCE_DISASS);
+                }
+            }
+      }
+  }
   /**
    * Project open user action
    */

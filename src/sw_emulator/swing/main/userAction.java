@@ -200,6 +200,9 @@ public interface userAction {
   /** Memory assign #><  */
   public static final int MEM_HIGHLOW = 58;  
   
+    /** Sergi: import MMSAVE from Vice emulator **/
+  public static final int PROJ_OPEN_MMSAVE = 59; 
+  
   /**
    * Execute the passed user action
    * 
